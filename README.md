@@ -1,6 +1,8 @@
 # Key Distribution Scenario: KDC, Alice, dan Bob (AES-128)
 
 Implementasi skenario distribusi kunci simetris dengan *Key Distribution Center* (KDC). Alice (initiator) dan Bob (responder) mendapatkan session key dari KDC, saling mengautentikasi, lalu berkomunikasi dua arah dengan AES-128. AES dan KDC ditulis manual tanpa library kriptografi, hanya `socket` dan `threading` bawaan Python.
+<br> <br>
+![Scenario](Images/KeyDistributionScenario.jpeg)
 
 ## Alur Protokol
 
