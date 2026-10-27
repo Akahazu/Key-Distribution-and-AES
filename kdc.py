@@ -1,11 +1,13 @@
 import socket
 import threading
-import os
-from aes import encrypt_ecb
+import secrets
+import string
+from aes import encrypt_cbc
 from util import recv_line, ask_key, ask_int, ask_id, tune, close_sock
 
 HOST = "0.0.0.0"
 MASTER_KEYS = {}
+ALPHABET = string.ascii_letters + string.digits
 lock = threading.Lock()
 
 def handle_client(conn, addr):
@@ -29,11 +31,11 @@ def handle_client(conn, addr):
             print("[KDC] Ditolak: ID tidak terdaftar.")
             return
 
-        ks = os.urandom(16)
-        print(f"[KDC] Session Key (Ks): {ks.hex()}")
+        ks = ''.join(secrets.choice(ALPHABET) for _ in range(16)).encode('ascii')
+        print(f"[KDC] Session Key (Ks): {ks.decode('ascii')} ({ks.hex()})")
 
-        tiket_alice = encrypt_ecb(f"{ks.hex()}|{id_a}|{id_b}|{n1}".encode('utf-8'), ka)
-        tiket_bob = encrypt_ecb(f"{ks.hex()}|{id_a}".encode('utf-8'), kb)
+        tiket_alice = encrypt_cbc(f"{ks.hex()}|{id_a}|{id_b}|{n1}".encode('utf-8'), ka)
+        tiket_bob = encrypt_cbc(f"{ks.hex()}|{id_a}".encode('utf-8'), kb)
         print(f"[Langkah 2] E(Ka, ...) : {tiket_alice.hex()}")
         print(f"[Langkah 2] E(Kb, ...) : {tiket_bob.hex()}")
 

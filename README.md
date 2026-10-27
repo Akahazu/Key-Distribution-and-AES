@@ -25,7 +25,7 @@ Langkah 1-2 adalah **distribusi kunci**, langkah 3-5 adalah **autentikasi**. Set
 | `kdc.py` | Server KDC. Menyimpan daftar ID dan master key, membuat `Ks`, dan membentuk dua tiket terenkripsi. |
 | `alice.py` | Initiator. Meminta kunci ke KDC, meneruskan tiket ke Bob, memverifikasi, lalu chat. |
 | `bob.py` | Responder. Menunggu Alice, mendekripsi tiket, menantang dengan N2, lalu chat. |
-| `aes.py` | Implementasi AES-128 manual: key expansion, SubBytes, ShiftRows, MixColumns, AddRoundKey, dan inversnya. Mode ECB dengan padding PKCS7. |
+| `aes.py` | Implementasi AES-128 manual: key expansion, SubBytes, ShiftRows, MixColumns, AddRoundKey, dan inversnya. Mode CBC dengan padding PKCS7. |
 | `util.py` | Fungsi bantu: pembacaan pesan per baris dari socket, penutupan socket yang bersih, dan validasi input (key, port, ID). |
 
 ## Format Data
@@ -36,7 +36,7 @@ Langkah 1-2 adalah **distribusi kunci**, langkah 3-5 adalah **autentikasi**. Set
 
 ## Cara Menjalankan
 
-Butuh Python 3, tanpa dependensi tambahan. Jalankan di tiga perangkat (atau tiga terminal) dengan urutan **KDC → Bob → Alice**.
+Python 3, tanpa dependensi tambahan. Jalankan di tiga perangkat (atau tiga terminal) dengan urutan **KDC → Bob → Alice**.
 
 ```bash
 python kdc.py     # isi port, lalu daftarkan ID dan master key Alice & Bob
@@ -60,8 +60,7 @@ Contoh mengganti key: ubah dengan `/key` di Alice atau Bob, perbarui juga di KDC
 
 ## Catatan Implementasi
 
-- **Mode ECB + PKCS7**: deterministik, sehingga key dan plaintext yang sama menghasilkan ciphertext yang sama dan mudah diverifikasi. Kelemahannya, blok plaintext yang sama menghasilkan blok ciphertext yang sama.
-- **Pengujian AES**: sesuai test vector FIPS-197 (key `000102030405060708090a0b0c0d0e0f`, plaintext `00112233445566778899aabbccddeeff` menghasilkan `69c4e0d86a7b0430d8cdb78070b4c55a`).
+- **Mode CBC + PKCS7**: non-deterministik (menggunakan IV acak), sehingga key dan plaintext yang sama akan menghasilkan ciphertext yang berbeda setiap kali dienkripsi. Ini meningkatkan keamanan dengan menyembunyikan pola data.
 - **Dua arah**: Alice dan Bob masing-masing memakai thread penerima sehingga dapat mengirim dan menerima kapan saja.
 - **Keterbatasan**: Bob melayani satu Alice dalam satu waktu, dan master key dikirim ke KDC secara manual (di luar protokol), sesuai asumsi skenario.
 

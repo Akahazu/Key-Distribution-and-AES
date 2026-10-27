@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 import sys
-from aes import encrypt_ecb, decrypt_ecb
+from aes import encrypt_cbc, decrypt_cbc
 from util import recv_line, ask_key, ask_int, ask_id, tune, close_sock
 
 session = {"sock": None, "ks": None}
@@ -21,7 +21,7 @@ def receive_messages(sock, ks):
             if not line:
                 break
             try:
-                plaintext = decrypt_ecb(bytes.fromhex(line), ks).decode('utf-8')
+                plaintext = decrypt_cbc(bytes.fromhex(line), ks).decode('utf-8')
                 print(f"\n[Bob] Ciphertext (hex): {line}")
                 print(f"[Bob] Plaintext       : {plaintext}")
             except Exception as e:
@@ -65,7 +65,7 @@ def get_session_key(cfg, ka):
     print(f"[Langkah 2] E(Kb, ...) : {line_b}")
 
     try:
-        plain = decrypt_ecb(bytes.fromhex(line_a), ka).decode('utf-8')
+        plain = decrypt_cbc(bytes.fromhex(line_a), ka).decode('utf-8')
     except Exception:
         raise ValueError("Tiket tidak bisa didekripsi (Master Key Alice berbeda dengan di KDC?)")
     parts = plain.split("|")
@@ -89,11 +89,11 @@ def authenticate_with_bob(cfg, ks, tiket_bob_hex):
         n2_hex = recv_line(sock)
         if not n2_hex:
             raise ValueError("Bob menutup koneksi (Master Key Bob salah atau tiket ditolak)")
-        n2 = decrypt_ecb(bytes.fromhex(n2_hex), ks).decode('utf-8')
+        n2 = decrypt_cbc(bytes.fromhex(n2_hex), ks).decode('utf-8')
         print(f"[Langkah 4] E(Ks, N2) : {n2_hex}")
         print(f"[Langkah 4] N2 = {n2}")
         f_n2 = str(int(n2) + 1)
-        f_hex = encrypt_ecb(f_n2.encode('utf-8'), ks).hex()
+        f_hex = encrypt_cbc(f_n2.encode('utf-8'), ks).hex()
         sock.sendall(f_hex.encode('ascii') + b"\n")
         print(f"[Langkah 5] E(Ks, f(N2)) : {f_hex}")
         print(f"[Langkah 5] f(N2) = {f_n2}")
@@ -155,7 +155,7 @@ def start_alice():
             print("[!] Belum terhubung. Ketik /connect.")
         else:
             try:
-                packet = encrypt_ecb(msg.encode('utf-8'), session["ks"])
+                packet = encrypt_cbc(msg.encode('utf-8'), session["ks"])
                 session["sock"].sendall(packet.hex().encode('ascii') + b"\n")
                 print(f"[Alice] Ciphertext (hex): {packet.hex()}")
             except Exception:

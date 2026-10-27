@@ -149,56 +149,37 @@ def unpad(data: bytes) -> bytes:
 def xor_bytes(a: bytes, b: bytes) -> bytes:
     return bytes(x ^ y for x, y in zip(a, b))
 
-# def encrypt_cbc(plaintext: bytes, key: bytes, iv: bytes = None) -> bytes:
-#     if iv is None:
-#         iv = os.urandom(BLOCK_SIZE)
-#     elif len(iv) != BLOCK_SIZE:
-#         raise ValueError("IV harus 16 byte")
+def encrypt_cbc(plaintext: bytes, key: bytes, iv: bytes = None) -> bytes:
+    if iv is None:
+        iv = os.urandom(BLOCK_SIZE)
+    elif len(iv) != BLOCK_SIZE:
+        raise ValueError("IV harus 16 byte")
 
-#     round_keys = expand_key(key)
-#     data = pad(plaintext)
-#     prev = iv
-#     out = []
-
-#     for i in range(0, len(data), BLOCK_SIZE):
-#         block = data[i:i+BLOCK_SIZE]
-#         prev = encrypt_block(xor_bytes(block, prev), round_keys)
-#         out.append(prev)
-
-#     return iv + b''.join(out)
-
-# def decrypt_cbc(ciphertext: bytes, key: bytes) -> bytes:
-#     if len(ciphertext) < 2 * BLOCK_SIZE or len(ciphertext) % BLOCK_SIZE:
-#         raise ValueError("Ciphertext tidak valid")
-
-#     iv = ciphertext[:BLOCK_SIZE]
-#     ct = ciphertext[BLOCK_SIZE:]
-#     round_keys = expand_key(key)
-
-#     prev = iv
-#     out = []
-#     for i in range(0, len(ct), BLOCK_SIZE):
-#         block = ct[i:i+BLOCK_SIZE]
-#         out.append(xor_bytes(decrypt_block(block, round_keys), prev))
-#         prev = block
-
-#     return unpad(b''.join(out))
-
-def encrypt_ecb(plaintext: bytes, key: bytes) -> bytes:
     round_keys = expand_key(key)
     data = pad(plaintext)
+    prev = iv
     out = []
+
     for i in range(0, len(data), BLOCK_SIZE):
         block = data[i:i+BLOCK_SIZE]
-        out.append(encrypt_block(block, round_keys))
-    return b''.join(out)
+        prev = encrypt_block(xor_bytes(block, prev), round_keys)
+        out.append(prev)
 
-def decrypt_ecb(ciphertext: bytes, key: bytes) -> bytes:
-    if len(ciphertext) % BLOCK_SIZE:
-        raise ValueError("Ciphertext ECB harus kelipatan 16 byte")
+    return iv + b''.join(out)
+
+def decrypt_cbc(ciphertext: bytes, key: bytes) -> bytes:
+    if len(ciphertext) < 2 * BLOCK_SIZE or len(ciphertext) % BLOCK_SIZE:
+        raise ValueError("Ciphertext tidak valid")
+
+    iv = ciphertext[:BLOCK_SIZE]
+    ct = ciphertext[BLOCK_SIZE:]
     round_keys = expand_key(key)
+
+    prev = iv
     out = []
-    for i in range(0, len(ciphertext), BLOCK_SIZE):
-        block = ciphertext[i:i+BLOCK_SIZE]
-        out.append(decrypt_block(block, round_keys))
+    for i in range(0, len(ct), BLOCK_SIZE):
+        block = ct[i:i+BLOCK_SIZE]
+        out.append(xor_bytes(decrypt_block(block, round_keys), prev))
+        prev = block
+
     return unpad(b''.join(out))

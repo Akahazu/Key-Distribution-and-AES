@@ -2,7 +2,7 @@ import socket
 import threading
 import os
 import sys
-from aes import encrypt_ecb, decrypt_ecb
+from aes import encrypt_cbc, decrypt_cbc
 from util import recv_line, ask_key, ask_int, tune, close_sock
 
 HOST = "0.0.0.0"
@@ -22,7 +22,7 @@ def receive_messages(sock, ks):
             if not line:
                 break
             try:
-                plaintext = decrypt_ecb(bytes.fromhex(line), ks).decode('utf-8')
+                plaintext = decrypt_cbc(bytes.fromhex(line), ks).decode('utf-8')
                 print(f"\n[Alice] Ciphertext (hex): {line}")
                 print(f"[Alice] Plaintext       : {plaintext}")
             except Exception as e:
@@ -37,7 +37,7 @@ def authenticate(conn):
         raise ValueError("Tidak ada tiket diterima")
     print(f"[Langkah 3] E(Kb, ...) : {tiket_hex}")
     try:
-        plain = decrypt_ecb(bytes.fromhex(tiket_hex), state["kb"]).decode('utf-8')
+        plain = decrypt_cbc(bytes.fromhex(tiket_hex), state["kb"]).decode('utf-8')
     except Exception:
         raise ValueError("Tiket tidak bisa didekripsi (Master Key Bob berbeda dengan di KDC?)")
     parts = plain.split("|")
@@ -47,7 +47,7 @@ def authenticate(conn):
     print(f"[Langkah 3] ID Alice = {parts[1]}, Ks = {ks.hex()}")
 
     n2 = str(int.from_bytes(os.urandom(4), "big"))
-    n2_hex = encrypt_ecb(n2.encode('utf-8'), ks).hex()
+    n2_hex = encrypt_cbc(n2.encode('utf-8'), ks).hex()
     conn.sendall(n2_hex.encode('ascii') + b"\n")
     print(f"[Langkah 4] N2 = {n2}")
     print(f"[Langkah 4] E(Ks, N2) : {n2_hex}")
@@ -55,7 +55,7 @@ def authenticate(conn):
     f_hex = recv_line(conn)
     if not f_hex:
         raise ValueError("Alice tidak mengirim f(N2)")
-    f_plain = decrypt_ecb(bytes.fromhex(f_hex), ks).decode('utf-8')
+    f_plain = decrypt_cbc(bytes.fromhex(f_hex), ks).decode('utf-8')
     print(f"[Langkah 5] E(Ks, f(N2)) : {f_hex}")
     expected = str(int(n2) + 1)
     if f_plain != expected:
@@ -130,7 +130,7 @@ def start_bob():
             print("[!] Belum ada Alice yang terhubung.")
         else:
             try:
-                packet = encrypt_ecb(msg.encode('utf-8'), state["ks"])
+                packet = encrypt_cbc(msg.encode('utf-8'), state["ks"])
                 state["sock"].sendall(packet.hex().encode('ascii') + b"\n")
                 print(f"[Bob] Ciphertext (hex): {packet.hex()}")
             except Exception:
